@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<!-- Fleet dashboard exported for GitHub Pages -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>HHC New Vehicle Request Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#f8fafc;color:#0f172a;min-height:100vh;padding:24px;}
+.container{max-width:1320px;margin:0 auto;display:none;flex-direction:column;gap:24px;}
+.container.unlocked{display:flex;}
+.header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:16px;}
+.crumb{display:flex;align-items:center;gap:6px;font-size:14px;color:#64748b;margin-bottom:4px;}
+h1{font-size:30px;font-weight:700;letter-spacing:-.5px;}
+.sub{color:#64748b;margin-top:4px;}
+.header-actions{display:flex;flex-direction:column;gap:10px;align-items:flex-end;}
+.btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.btn{padding:10px 18px;border-radius:14px;border:1px solid #e2e8f0;background:#fff;font-size:14px;cursor:pointer;font-weight:500;}
+.btn:hover{background:#f1f5f9;}
+.btn-primary{background:#0f172a;color:#fff;border-color:#0f172a;}
+.btn-primary:hover{background:#1e293b;}
+.btn-icon{padding:8px 10px;}
+.link{color:#64748b;font-size:12px;text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;}
+.link:hover{color:#0f172a;}
+.header-links{display:flex;gap:14px;align-items:center;margin-top:6px;flex-wrap:wrap;}
+.view-toggle{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.pill{display:inline-flex;background:#fff;border:1px solid #e2e8f0;border-radius:999px;padding:3px;}
+.pill button{padding:6px 14px;border-radius:999px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:#475569;display:flex;align-items:center;gap:6px;}
+.pill button.active{background:#0f172a;color:#fff;}
+.view-bu-label{padding:8px 14px;border-radius:12px;background:#f1f5f9;border:1px solid #e2e8f0;font-size:13px;font-weight:500;color:#0f172a;display:none;}
+.view-bu-label.show{display:inline-block;}
+.bu-banner{display:none;background:#fef3c7;border:1px solid #fde68a;color:#92400e;border-radius:14px;padding:12px 16px;font-size:14px;align-items:center;gap:10px;}
+.bu-banner.show{display:flex;}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.card-header{padding:16px 20px 8px;font-size:18px;font-weight:600;}
+.card-body{padding:20px;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
+.stat{display:flex;justify-content:space-between;align-items:center;padding:20px;}
+.stat .label{font-size:13px;color:#64748b;}
+.stat .value{font-size:30px;font-weight:600;margin-top:4px;}
+.stat .ssub{font-size:12px;color:#64748b;margin-top:4px;}
+.icon-tile{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;}
+.tone-blue{background:linear-gradient(135deg,#3b82f6,#4f46e5);}
+.tone-amber{background:linear-gradient(135deg,#f59e0b,#ea580c);}
+.tone-purple{background:linear-gradient(135deg,#8b5cf6,#6d28d9);}
+.tone-green{background:linear-gradient(135deg,#10b981,#0d9488);}
+.tabs{display:flex;gap:4px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:4px;width:fit-content;}
+.tab{padding:8px 16px;border-radius:10px;cursor:pointer;font-size:14px;color:#475569;border:none;background:transparent;font-weight:500;}
+.tab.active{background:#0f172a;color:#fff;}
+.tab-panel{display:none;flex-direction:column;gap:16px;}
+.tab-panel.active{display:flex;}
+.kanban{display:grid;grid-template-columns:repeat(6,minmax(220px,1fr));gap:12px;overflow-x:auto;padding-bottom:6px;}
+.col{background:#f1f5f9;border:2px dashed transparent;border-radius:16px;padding:12px;min-height:220px;transition:all .15s;}
+.col.drag-over{background:#eff6ff;border-color:#60a5fa;}
+.col h3{font-size:13px;font-weight:600;color:#334155;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.col h3 .count{background:#fff;border:1px solid #e2e8f0;border-radius:999px;padding:2px 8px;font-size:11px;color:#475569;}
+.kcard{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all .15s;}
+.kcard.draggable{cursor:grab;}
+.kcard.draggable:active{cursor:grabbing;}
+.kcard:hover{box-shadow:0 2px 6px rgba(0,0,0,.06);}
+.kcard.dragging{opacity:.4;transform:scale(.98);}
+.kcard.selected{border-color:#93c5fd;box-shadow:0 0 0 2px #dbeafe;}
+.kcard .kid{font-weight:600;font-size:13px;}
+.kcard .kreq{font-size:13px;margin-top:2px;}
+.kcard .kmeta{font-size:12px;color:#64748b;margin-top:4px;}
+.kcard .krow{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;}
+.badge{display:inline-block;padding:3px 10px;border-radius:9999px;font-size:11px;font-weight:500;border:1px solid;}
+.st-Submitted{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe;}
+.st-PendingApproval{background:#fef3c7;color:#b45309;border-color:#fde68a;}
+.st-Approved{background:#e0e7ff;color:#4338ca;border-color:#c7d2fe;}
+.st-Ordered{background:#ede9fe;color:#6d28d9;border-color:#ddd6fe;}
+.st-InUpfit{background:#ffedd5;color:#c2410c;border-color:#fed7aa;}
+.st-Delivered{background:#d1fae5;color:#047857;border-color:#a7f3d0;}
+.st-Cancelled{background:#f1f5f9;color:#475569;border-color:#e2e8f0;}
+.p-High{background:#fee2e2;color:#b91c1c;border-color:#fecaca;}
+.p-Medium{background:#ffedd5;color:#c2410c;border-color:#fed7aa;}
+.p-Low{background:#dcfce7;color:#15803d;border-color:#bbf7d0;}
+.sel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;font-size:13px;margin-top:14px;}
+.sel-cell{padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;}
+.sel-cell .l{color:#64748b;font-size:12px;}
+.sel-cell .v{font-weight:500;margin-top:2px;}
+.reco{background:#eff6ff;border:1px solid #dbeafe;border-radius:14px;padding:14px;margin-top:14px;}
+.reco h4{color:#1e3a8a;font-size:14px;}
+.reco p{color:#1e40af;font-size:13px;margin-top:4px;}
+.sel-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+.sel-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.notes-section{margin-top:16px;border:1px solid #e2e8f0;border-radius:14px;padding:14px;background:#fff;}
+.notes-section h4{font-size:14px;font-weight:600;color:#0f172a;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.notes-section h4 .count{background:#f1f5f9;color:#475569;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:500;}
+.notes-list{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;margin-bottom:12px;padding-right:4px;}
+.note{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;}
+.note.system{background:#fafaf9;border-style:dashed;color:#475569;}
+.note .nhead{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;margin-bottom:4px;}
+.note .nauthor{font-weight:600;color:#0f172a;}
+.note.system .nauthor{color:#64748b;font-weight:500;}
+.note .ntime{color:#94a3b8;font-size:11px;}
+.note .ntext{font-size:13px;color:#1f2937;white-space:pre-wrap;line-height:1.45;}
+.note.system .ntext{font-style:italic;color:#64748b;}
+.notes-empty{color:#94a3b8;font-size:13px;text-align:center;padding:12px;font-style:italic;}
+.note-form{display:flex;gap:8px;align-items:stretch;}
+.note-form textarea{flex:1;padding:10px 12px;border-radius:12px;border:1px solid #e2e8f0;font-size:13px;font-family:inherit;resize:vertical;min-height:60px;}
+.note-form textarea:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 2px #dbeafe;}
+.note-form button{align-self:flex-end;}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding:16px;}
+.filters input,.filters select{padding:10px 12px;border-radius:14px;border:1px solid #e2e8f0;font-size:14px;background:#fff;width:100%;}
+.search-wrap{position:relative;}
+.search-wrap input{padding-left:34px;}
+.search-wrap svg{position:absolute;left:10px;top:10px;color:#94a3b8;}
+table{width:100%;border-collapse:collapse;font-size:14px;}
+thead{background:#f1f5f9;color:#475569;}
+th{text-align:left;padding:12px;font-weight:500;}
+td{padding:12px;border-top:1px solid #e2e8f0;}
+tbody tr:hover{background:#f8fafc;cursor:pointer;}
+.text-right{text-align:right;}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;}
+.chart-wrap{height:280px;padding:8px;}
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:40px 16px;overflow-y:auto;}
+.modal-backdrop.open{display:flex;}
+.modal{background:#fff;border-radius:20px;width:100%;max-width:640px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,.25);position:relative;}
+.modal h2{font-size:20px;font-weight:600;margin-bottom:4px;}
+.modal p.sub{font-size:13px;color:#64748b;margin-bottom:18px;}
+.modal .close-x{position:absolute;top:14px;right:14px;background:none;border:none;cursor:pointer;font-size:22px;color:#64748b;}
+.modal .close-x:hover{color:#0f172a;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field.full{grid-column:1/-1;}
+.field label{font-size:12px;color:#475569;font-weight:500;}
+.field label .req{color:#dc2626;}
+.field input,.field select,.field textarea{padding:10px 12px;border-radius:12px;border:1px solid #e2e8f0;font-size:14px;background:#fff;font-family:inherit;}
+.field input:disabled,.field select:disabled{background:#f1f5f9;color:#475569;cursor:not-allowed;}
+.field textarea{resize:vertical;min-height:70px;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 2px #dbeafe;}
+.form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+.err{color:#dc2626;font-size:12px;margin-top:6px;display:none;}
+.toast{position:fixed;bottom:24px;right:24px;background:#0f172a;color:#fff;padding:12px 18px;border-radius:14px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.2);opacity:0;transform:translateY(20px);transition:all .25s;z-index:80;}
+.toast.show{opacity:1;transform:translateY(0);}
+.lock-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px;}
+.lock-overlay.hidden{display:none;}
+.lock-card{background:#fff;border-radius:24px;padding:36px 32px;width:100%;max-width:420px;box-shadow:0 30px 80px rgba(0,0,0,.5);text-align:center;}
+.lock-logo{width:56px;height:56px;border-radius:18px;background:linear-gradient(135deg,#3b82f6,#4f46e5);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#fff;}
+.lock-card h1{font-size:22px;font-weight:700;margin-bottom:6px;}
+.lock-card .sub{font-size:14px;color:#64748b;margin-bottom:22px;}
+.lock-input{width:100%;padding:14px 16px;border-radius:14px;border:2px solid #e2e8f0;font-size:24px;text-align:center;font-family:"SF Mono",Consolas,monospace;letter-spacing:8px;font-weight:600;background:#f8fafc;}
+.lock-input:focus{outline:none;border-color:#3b82f6;background:#fff;}
+.lock-error{color:#dc2626;font-size:13px;margin-top:10px;min-height:18px;}
+.lock-btns{display:flex;flex-direction:column;gap:8px;margin-top:18px;}
+.lock-btns .btn{width:100%;padding:12px;font-size:14px;}
+.lock-hint{font-size:12px;color:#94a3b8;margin-top:18px;}
+.pin-row{display:grid;grid-template-columns:1fr 140px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;}
+.pin-row:last-child{border-bottom:none;}
+.pin-row label{font-size:13px;color:#334155;font-weight:500;}
+.pin-row input{padding:8px 10px;border-radius:10px;border:1px solid #e2e8f0;font-size:14px;font-family:"SF Mono",Consolas,monospace;text-align:center;letter-spacing:2px;}
+</style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-card">
+    <div class="lock-logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+    </div>
+    <h1>HHC Fleet Request Dashboard</h1>
+    <p class="sub" id="lockSub">Enter your access code</p>
+    <input type="password" id="lockPin" class="lock-input" maxlength="5" inputmode="numeric" placeholder="-----" autocomplete="off">
+    <div class="lock-error" id="lockError"></div>
+    <div class="lock-btns">
+      <button class="btn btn-primary" id="unlockAdmin">Unlock as Fleet Admin</button>
+      <button class="btn" id="unlockBU">Unlock as Business Unit Coordinator</button>
+    </div>
+    <p class="lock-hint">Don't have a code? Contact Christopher Cartagena, Fleet Management.</p>
+  </div>
+</div>
+
+<!-- MAIN DASHBOARD -->
+<div class="container" id="mainContainer">
+  <div class="header">
+    <div>
+      <div class="crumb">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path><circle cx="6.5" cy="16.5" r="2.5"></circle><circle cx="16.5" cy="16.5" r="2.5"></circle></svg>
+        HHC Fleet Management System
+      </div>
+      <h1>New Vehicle Request Dashboard</h1>
+      <p class="sub">Intake, approvals, ordering, upfit and delivery tracking for all new fleet vehicle requests.</p>
+      <div class="header-links">
+        <button class="link" id="resetData">Reset Sample Data</button>
+        <button class="link" id="manageCodes">Manage Access Codes</button>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="view-toggle">
+        <div class="pill" id="viewPill">
+          <button data-view="admin" class="active">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7v10l10 5 10-5V7l-10-5z"></path></svg>
+            Fleet Admin
+          </button>
+          <button data-view="bu">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"></path><path d="M9 9h2m-2 4h2m-2 4h2m4-8h2m-2 4h2m-2 4h2"></path></svg>
+            Business Unit
+          </button>
+        </div>
+        <span class="view-bu-label" id="buLabel"></span>
+        <button class="btn btn-icon" id="lockBtn" title="Lock dashboard">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </button>
+      </div>
+      <div class="btns">
+        <button class="btn" id="exportBtn">Export Requests</button>
+        <button class="btn btn-primary" id="openModal">+ New Vehicle Request</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bu-banner" id="buBanner">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+    <div><strong>Viewing: <span id="banBu"></span></strong> — limited to your business unit. Status changes and deletions are reserved for Fleet Admin.</div>
+  </div>
+
+  <div class="stats">
+    <div class="card stat"><div><div class="label">Open Requests</div><div class="value" id="kpiOpen">0</div><div class="ssub">Active in pipeline</div></div><div class="icon-tile tone-blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg></div></div>
+    <div class="card stat"><div><div class="label">Pending Approval</div><div class="value" id="kpiPending">0</div><div class="ssub">Awaiting fleet/finance sign-off</div></div><div class="icon-tile tone-amber"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></div></div>
+    <div class="card stat"><div><div class="label">In Procurement</div><div class="value" id="kpiProc">0</div><div class="ssub">Ordered or in upfit</div></div><div class="icon-tile tone-purple"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4"></path><circle cx="9" cy="20" r="2"></circle><circle cx="18" cy="20" r="2"></circle></svg></div></div>
+    <div class="card stat"><div><div class="label">Avg Days to Deliver</div><div class="value" id="kpiAvg">0</div><div class="ssub">Submit → Delivered</div></div><div class="icon-tile tone-green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="pipeline">Pipeline</button>
+    <button class="tab" data-tab="queue">Request Queue</button>
+    <button class="tab" data-tab="analytics">Analytics</button>
+  </div>
+
+  <div class="tab-panel active" id="panel-pipeline">
+    <div class="card">
+      <div class="card-header">Pipeline <span id="pipelineHint" style="font-size:12px;color:#94a3b8;font-weight:400;margin-left:8px;">Drag cards between columns to update status</span></div>
+      <div class="card-body"><div class="kanban" id="kanban"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">Selected Request Details</div>
+      <div class="card-body" id="selectedPanel"></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-queue">
+    <div class="card">
+      <div class="filters">
+        <div class="search-wrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input id="searchInput" placeholder="Search NVR ID, requester, make/model...">
+        </div>
+        <select id="filterStatus"><option value="All">All Statuses</option><option value="Submitted">Submitted</option><option value="Pending Approval">Pending Approval</option><option value="Approved">Approved</option><option value="Ordered">Ordered</option><option value="In Upfit">In Upfit</option><option value="Delivered">Delivered</option><option value="Cancelled">Cancelled</option></select>
+        <select id="filterType"><option value="All">All Vehicle Types</option><option value="Ambulance">Ambulance</option><option value="Sedan">Sedan</option><option value="SUV">SUV</option><option value="Van">Van</option><option value="Pickup">Pickup</option><option value="Box Truck">Box Truck</option></select>
+        <select id="filterBU"><option value="All">All Business Units</option><option value="Backus">Backus</option><option value="Behavioral Health Network">Behavioral Health Network</option><option value="Charlotte Hungerford">Charlotte Hungerford</option><option value="Hartford Hospital">Hartford Hospital</option><option value="Home Care">Home Care</option><option value="MidState">MidState</option><option value="Rushford">Rushford</option><option value="Senior Services">Senior Services</option><option value="St. Vincent&#39;s">St. Vincent's</option><option value="Windham">Windham</option></select>
+        <select id="filterFund"><option value="All">All Funding</option><option value="Capital">Capital</option><option value="Lease-EFM">Lease-EFM</option><option value="Operating">Operating</option></select>
+      </div>
+    </div>
+    <div class="card" style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Request</th><th>Requester</th><th>Business Unit</th><th>Vehicle</th><th>Funding</th><th class="text-right">Est Cost</th><th>Status</th><th>Priority</th><th>Submitted</th><th>Target Delivery</th></tr></thead>
+        <tbody id="tbl"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-analytics">
+    <div class="charts">
+      <div class="card"><div class="card-header">Requests by Business Unit</div><div class="card-body"><div class="chart-wrap"><canvas id="cBU"></canvas></div></div></div>
+      <div class="card"><div class="card-header">Vehicle Type Mix</div><div class="card-body"><div class="chart-wrap"><canvas id="cType"></canvas></div></div></div>
+      <div class="card"><div class="card-header">Funding Source</div><div class="card-body"><div class="chart-wrap"><canvas id="cFund"></canvas></div></div></div>
+      <div class="card"><div class="card-header">Monthly Submitted vs Delivered</div><div class="card-body"><div class="chart-wrap"><canvas id="cTrend"></canvas></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW REQUEST MODAL -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <button class="close-x" id="closeModal">×</button>
+    <h2>New Vehicle Request</h2>
+    <p class="sub">Submit a new request into the fleet intake pipeline.</p>
+    <form id="nvrForm">
+      <div class="form-grid">
+        <div class="field"><label>Requester <span class="req">*</span></label><input name="requester" required=""></div>
+        <div class="field"><label>Business Unit <span class="req">*</span></label><select name="businessUnit" id="buSelect" required=""></select></div>
+        <div class="field" id="buOtherWrap" style="display:none;"><label>Specify Business Unit</label><input name="businessUnitOther"></div>
+        <div class="field"><label>Location</label><input name="location" placeholder="City / Campus"></div>
+        <div class="field"><label>Vehicle Type <span class="req">*</span></label><select name="vehicleType" required=""><option>Ambulance</option><option>Sedan</option><option>SUV</option><option>Van</option><option>Pickup</option><option>Box Truck</option></select></div>
+        <div class="field"><label>Make / Model <span class="req">*</span></label><input name="makeModel" required="" placeholder="e.g., Ford Transit 350"></div>
+        <div class="field full"><label>Justification <span class="req">*</span></label><textarea name="justification" required="" placeholder="Why is this vehicle needed?"></textarea></div>
+        <div class="field"><label>Funding Source <span class="req">*</span></label><select name="fundingSource" required=""><option>Capital</option><option>Lease-EFM</option><option>Operating</option></select></div>
+        <div class="field"><label>Estimated Cost (USD) <span class="req">*</span></label><input type="number" name="estCost" min="0" step="100" required=""></div>
+        <div class="field"><label>Priority</label><select name="priority"><option>High</option><option selected="">Medium</option><option>Low</option></select></div>
+        <div class="field"><label>Vendor</label><select name="vendor"><option>EFM</option><option>MHQ</option><option>Dealer</option></select></div>
+        <div class="field"><label>Upfit Needed</label><select name="upfitNeeded"><option>No</option><option>Yes</option></select></div>
+        <div class="field"><label>Wrap Needed</label><select name="wrapNeeded"><option>No</option><option>Yes</option></select></div>
+        <div class="field"><label>Target Delivery</label><input type="date" name="targetDelivery"></div>
+      </div>
+      <div class="err" id="formErr">Please fill in all required fields.</div>
+      <div class="form-actions">
+        <button type="button" class="btn" id="cancelModal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Submit Request</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MANAGE ACCESS CODES MODAL -->
+<div class="modal-backdrop" id="codesBackdrop">
+  <div class="modal">
+    <button class="close-x" id="closeCodes">×</button>
+    <h2>Manage Access Codes</h2>
+    <p class="sub">Set the PIN for Fleet Admin and each Business Unit. Codes are stored locally on this browser.</p>
+    <div id="pinList"></div>
+    <div class="form-actions">
+      <button type="button" class="btn" id="cancelCodes">Cancel</button>
+      <button type="button" class="btn btn-primary" id="saveCodes">Save Codes</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const seed = [
+  { id:"NVR-2061", requester:"K. Alvarez", businessUnit:"Hartford Hospital", location:"Hartford", vehicleType:"Ambulance", makeModel:"Ford F-450 Type I", justification:"Replace unit HH-218 (12 yrs, CRS 94).", fundingSource:"Capital", estCost:325000, status:"Pending Approval", priority:"High", submittedDate:"2026-05-12", targetDelivery:"2026-10-15", vendor:"MHQ", upfitNeeded:"Yes", wrapNeeded:"Yes", daysOpen:8, notes:[] },
+  { id:"NVR-2060", requester:"R. Thompson", businessUnit:"Backus", location:"Norwich", vehicleType:"SUV", makeModel:"Chevy Tahoe PPV", justification:"Security supervisor vehicle for new campus.", fundingSource:"Lease-EFM", estCost:62000, status:"Approved", priority:"Medium", submittedDate:"2026-05-08", targetDelivery:"2026-08-20", vendor:"EFM", upfitNeeded:"Yes", wrapNeeded:"No", daysOpen:12, notes:[] },
+  { id:"NVR-2059", requester:"S. DeVivo", businessUnit:"MidState", location:"Meriden", vehicleType:"Van", makeModel:"Ford Transit 350", justification:"Materials Management route expansion.", fundingSource:"Capital", estCost:58500, status:"Ordered", priority:"Medium", submittedDate:"2026-04-22", targetDelivery:"2026-07-30", vendor:"Dealer", upfitNeeded:"Yes", wrapNeeded:"Yes", daysOpen:28, notes:[] },
+  { id:"NVR-2058", requester:"D. Polaski", businessUnit:"Charlotte Hungerford", location:"Torrington", vehicleType:"Pickup", makeModel:"Ford F-250 4x4", justification:"Facilities snow / grounds.", fundingSource:"Capital", estCost:54200, status:"In Upfit", priority:"High", submittedDate:"2026-03-30", targetDelivery:"2026-06-15", vendor:"MHQ", upfitNeeded:"Yes", wrapNeeded:"No", daysOpen:51, notes:[] },
+  { id:"NVR-2057", requester:"G. Mas", businessUnit:"Home Care", location:"Statewide", vehicleType:"Sedan", makeModel:"Toyota Camry Hybrid", justification:"Clinician travel - 32k miles/yr.", fundingSource:"Lease-EFM", estCost:34500, status:"Delivered", priority:"Low", submittedDate:"2026-02-04", targetDelivery:"2026-05-05", vendor:"EFM", upfitNeeded:"No", wrapNeeded:"No", daysOpen:90, notes:[] },
+  { id:"NVR-2056", requester:"D. Colak", businessUnit:"Behavioral Health Network", location:"Hartford", vehicleType:"Van", makeModel:"Chrysler Pacifica", justification:"Client transport, ADA capable.", fundingSource:"Operating", estCost:48900, status:"Submitted", priority:"Medium", submittedDate:"2026-05-18", targetDelivery:"2026-09-30", vendor:"Dealer", upfitNeeded:"Yes", wrapNeeded:"No", daysOpen:2, notes:[] },
+  { id:"NVR-2055", requester:"R. Gerrity", businessUnit:"Windham", location:"Willimantic", vehicleType:"Ambulance", makeModel:"Ford E-450 Type III", justification:"Add unit for service area growth.", fundingSource:"Capital", estCost:298000, status:"Pending Approval", priority:"High", submittedDate:"2026-05-10", targetDelivery:"2026-11-10", vendor:"MHQ", upfitNeeded:"Yes", wrapNeeded:"Yes", daysOpen:10, notes:[] },
+  { id:"NVR-2054", requester:"M. Sullivan", businessUnit:"Rushford", location:"Middletown", vehicleType:"SUV", makeModel:"Ford Explorer", justification:"On-call clinical staff vehicle.", fundingSource:"Lease-EFM", estCost:46500, status:"Approved", priority:"Low", submittedDate:"2026-04-28", targetDelivery:"2026-08-01", vendor:"EFM", upfitNeeded:"No", wrapNeeded:"No", daysOpen:22, notes:[] },
+  { id:"NVR-2053", requester:"J. Pereira", businessUnit:"St. Vincent's", location:"Bridgeport", vehicleType:"Box Truck", makeModel:"Isuzu NPR-HD 16ft", justification:"Replace aging linen/laundry truck.", fundingSource:"Capital", estCost:89500, status:"Ordered", priority:"Medium", submittedDate:"2026-04-15", targetDelivery:"2026-09-15", vendor:"Dealer", upfitNeeded:"Yes", wrapNeeded:"Yes", daysOpen:35, notes:[] },
+  { id:"NVR-2052", requester:"L. Pierce", businessUnit:"Senior Services", location:"West Hartford", vehicleType:"Van", makeModel:"Ford Transit Connect", justification:"Meals on Wheels expansion route.", fundingSource:"Operating", estCost:39800, status:"Delivered", priority:"Medium", submittedDate:"2026-01-20", targetDelivery:"2026-04-30", vendor:"Dealer", upfitNeeded:"No", wrapNeeded:"Yes", daysOpen:99, notes:[] },
+  { id:"NVR-2051", requester:"A. Brown", businessUnit:"Hartford Hospital", location:"Hartford", vehicleType:"Pickup", makeModel:"Ford F-150", justification:"Grounds / facilities - duplicate request.", fundingSource:"Operating", estCost:42000, status:"Cancelled", priority:"Low", submittedDate:"2026-03-05", targetDelivery:"2026-06-30", vendor:"Dealer", upfitNeeded:"No", wrapNeeded:"No", daysOpen:18, notes:[] }
+];
+
+const DEFAULT_PINS = {
+  "__admin__": "78901",
+  "Hartford Hospital": "06102",
+  "Backus": "06360",
+  "MidState": "06450",
+  "Charlotte Hungerford": "06790",
+  "Home Care": "06095",
+  "Behavioral Health Network": "06105",
+  "Windham": "06226",
+  "Rushford": "06457",
+  "St. Vincent's": "06606",
+  "Senior Services": "06107"
+};
+
+const STORAGE_KEY = "nvr_requests";
+const PINS_KEY = "nvr_pins";
+const UNLOCK_KEY = "nvr_unlocked";
+const CURRENT_USER = "Christopher Cartagena";
+let requests = [];
+let pins = {};
+let viewMode = "admin";
+let currentBU = null;
+let unlockTarget = "admin"; // which mode the user is trying to unlock
+
+function loadRequests(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){ try{ requests = JSON.parse(raw); }catch(e){ requests = JSON.parse(JSON.stringify(seed)); } }
+  else { requests = JSON.parse(JSON.stringify(seed)); saveRequests(); }
+  requests.forEach(r=>{ if(!Array.isArray(r.notes)) r.notes = []; });
+}
+function saveRequests(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(requests)); }
+function loadPins(){
+  const raw = localStorage.getItem(PINS_KEY);
+  if(raw){ try{ pins = JSON.parse(raw); }catch(e){ pins = {...DEFAULT_PINS}; } }
+  else { pins = {...DEFAULT_PINS}; savePins(); }
+  // Ensure all defaults exist
+  Object.keys(DEFAULT_PINS).forEach(k=>{ if(!pins[k]) pins[k] = DEFAULT_PINS[k]; });
+}
+function savePins(){ localStorage.setItem(PINS_KEY, JSON.stringify(pins)); }
+
+function resolveBUForPin(pin){
+  for(const [bu,p] of Object.entries(pins)){
+    if(bu==="__admin__") continue;
+    if(p===pin) return bu;
+  }
+  return null;
+}
+
+const statusOrder = ["Submitted","Pending Approval","Approved","Ordered","In Upfit","Delivered","Cancelled"];
+const pipelineCols = ["Submitted","Pending Approval","Approved","Ordered","In Upfit","Delivered"];
+const baseVehicleTypes = ["Ambulance","Sedan","SUV","Van","Pickup","Box Truck"];
+const baseFunding = ["Capital","Lease-EFM","Operating"];
+
+function safe(s){return s.replace(/[\s\/\-\.]/g,"");}
+function statusClass(s){return "badge st-"+safe(s);}
+function priorityClass(p){return "badge p-"+p;}
+function money(n){return "$"+Number(n).toLocaleString();}
+function escapeHtml(s){ return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function formatTime(iso){
+  try{
+    const d = new Date(iso);
+    return d.toLocaleString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
+  }catch(e){ return iso; }
+}
+function addNoteToRequest(id, text, author){
+  const r = requests.find(x=>x.id===id); if(!r) return;
+  if(!Array.isArray(r.notes)) r.notes = [];
+  r.notes.push({ id: Date.now()+Math.random(), text, author: author||CURRENT_USER, timestamp: new Date().toISOString() });
+  saveRequests();
+}
+function addSystemNote(id, text){ addNoteToRequest(id, text, "System"); }
+
+let selectedId = null;
+let query="", fStatus="All", fType="All", fBU="All", fFund="All";
+
+function isAdmin(){ return viewMode === "admin"; }
+
+function getScopedRequests(){
+  if(isAdmin()) return requests;
+  if(!currentBU) return [];
+  return requests.filter(r=>r.businessUnit===currentBU);
+}
+
+function getFiltered(){
+  return getScopedRequests().filter(r=>{
+    const q = (r.id+" "+r.requester+" "+r.makeModel+" "+r.businessUnit+" "+r.vehicleType).toLowerCase();
+    return q.includes(query.toLowerCase())
+      && (fStatus==="All"||r.status===fStatus)
+      && (fType==="All"||r.vehicleType===fType)
+      && (fBU==="All"||r.businessUnit===fBU)
+      && (fFund==="All"||r.fundingSource===fFund);
+  });
+}
+
+/* ============ LOCK / PIN ============ */
+function showLockScreen(target){
+  unlockTarget = target || "admin";
+  document.getElementById("mainContainer").classList.remove("unlocked");
+  document.getElementById("lockOverlay").classList.remove("hidden");
+  const sub = document.getElementById("lockSub");
+  sub.textContent = target==="bu" ? "Enter your Business Unit access code" :
+                    target==="admin" ? "Enter Fleet Admin access code" :
+                    "Enter your access code";
+  document.getElementById("lockPin").value = "";
+  document.getElementById("lockError").textContent = "";
+  setTimeout(()=>document.getElementById("lockPin").focus(),100);
+}
+function hideLockScreen(){
+  document.getElementById("lockOverlay").classList.add("hidden");
+  document.getElementById("mainContainer").classList.add("unlocked");
+}
+function tryUnlockAs(scope){
+  const pin = document.getElementById("lockPin").value.trim();
+  const err = document.getElementById("lockError");
+  if(!pin){ err.textContent="Please enter your access code."; return; }
+  if(scope==="admin"){
+    if(pin === pins["__admin__"]){
+      viewMode = "admin";
+      sessionStorage.setItem(UNLOCK_KEY, "admin");
+      hideLockScreen();
+      applyViewMode(); refreshAll();
+      showToast("Unlocked as Fleet Admin");
+    } else {
+      err.textContent = "Incorrect Fleet Admin code.";
+    }
+  } else { // bu
+    const bu = resolveBUForPin(pin);
+    if(bu){
+      viewMode = "bu";
+      currentBU = bu;
+      sessionStorage.setItem(UNLOCK_KEY, bu);
+      hideLockScreen();
+      applyViewMode(); refreshAll();
+      showToast(`Unlocked as ${bu}`);
+    } else {
+      err.textContent = "Code not recognized. Check with your fleet contact.";
+    }
+  }
+}
+document.getElementById("unlockAdmin").addEventListener("click",()=>tryUnlockAs("admin"));
+document.getElementById("unlockBU").addEventListener("click",()=>tryUnlockAs("bu"));
+document.getElementById("lockPin").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){
+    e.preventDefault();
+    // If admin button is "primary" use admin path by default unless target hints bu
+    if(unlockTarget==="bu") tryUnlockAs("bu");
+    else tryUnlockAs("admin");
+  }
+});
+
+function lockDashboard(){
+  sessionStorage.removeItem(UNLOCK_KEY);
+  showLockScreen("any");
+}
+
+/* ============ VIEW MODE ============ */
+function applyViewMode(){
+  document.querySelectorAll("#viewPill button").forEach(b=>b.classList.toggle("active", b.dataset.view===viewMode));
+  const label = document.getElementById("buLabel");
+  if(viewMode==="bu" && currentBU){
+    label.textContent = currentBU;
+    label.classList.add("show");
+  } else {
+    label.classList.remove("show");
+  }
+  const banner = document.getElementById("buBanner");
+  if(viewMode==="bu" && currentBU){
+    banner.classList.add("show");
+    document.getElementById("banBu").textContent = currentBU;
+  } else {
+    banner.classList.remove("show");
+  }
+  document.getElementById("resetData").style.display = isAdmin() ? "inline-block" : "none";
+  document.getElementById("manageCodes").style.display = isAdmin() ? "inline-block" : "none";
+  document.getElementById("pipelineHint").style.display = isAdmin() ? "inline" : "none";
+  fBU = "All";
+}
+
+function renderKpis(){
+  const scope = getScopedRequests();
+  const open = scope.filter(r=>r.status!=="Delivered"&&r.status!=="Cancelled").length;
+  const pending = scope.filter(r=>r.status==="Pending Approval").length;
+  const proc = scope.filter(r=>r.status==="Ordered"||r.status==="In Upfit").length;
+  const delivered = scope.filter(r=>r.status==="Delivered");
+  const avg = delivered.length ? Math.round(delivered.reduce((a,r)=>a+(r.daysOpen||0),0)/delivered.length) : 0;
+  kpiOpen.textContent=open; kpiPending.textContent=pending; kpiProc.textContent=proc; kpiAvg.textContent=avg;
+}
+
+function renderKanban(){
+  const root = document.getElementById("kanban");
+  const scope = getScopedRequests();
+  const draggable = isAdmin();
+  root.innerHTML = pipelineCols.map(col=>{
+    const items = scope.filter(r=>r.status===col);
+    return `<div class="col" data-status="${col}">
+      <h3>${col}<span class="count">${items.length}</span></h3>
+      ${items.map(r=>`
+        <div class="kcard ${r.id===selectedId?'selected':''} ${draggable?'draggable':''}" ${draggable?'draggable="true"':''} data-id="${r.id}">
+          <div class="kid">${r.id}</div>
+          <div class="kreq">${escapeHtml(r.requester)} &bull; ${escapeHtml(r.businessUnit)}</div>
+          <div class="kmeta">${r.vehicleType} &bull; ${escapeHtml(r.makeModel)}</div>
+          <div class="krow"><span>${money(r.estCost)}</span><span class="${priorityClass(r.priority)}">${r.priority}</span></div>
+          <div class="kmeta">Target: ${r.targetDelivery||"-"}</div>
+        </div>`).join("")}
+    </div>`;
+  }).join("");
+
+  document.querySelectorAll(".kcard").forEach(c=>{
+    c.addEventListener("click",()=>{ selectedId=c.dataset.id; renderKanban(); renderSelected(); });
+    if(draggable){
+      c.addEventListener("dragstart",e=>{
+        e.dataTransfer.setData("text/plain", c.dataset.id);
+        e.dataTransfer.effectAllowed = "move";
+        c.classList.add("dragging");
+      });
+      c.addEventListener("dragend",()=>c.classList.remove("dragging"));
+    }
+  });
+
+  if(draggable){
+    document.querySelectorAll(".col").forEach(col=>{
+      col.addEventListener("dragover",e=>{ e.preventDefault(); e.dataTransfer.dropEffect="move"; col.classList.add("drag-over"); });
+      col.addEventListener("dragleave",()=>col.classList.remove("drag-over"));
+      col.addEventListener("drop",e=>{
+        e.preventDefault();
+        col.classList.remove("drag-over");
+        const id = e.dataTransfer.getData("text/plain");
+        const newStatus = col.dataset.status;
+        const r = requests.find(x=>x.id===id);
+        if(r && r.status!==newStatus){
+          const oldStatus = r.status;
+          r.status = newStatus;
+          addSystemNote(r.id, `Status changed: ${oldStatus} \u2192 ${newStatus}`);
+          saveRequests(); refreshAll();
+          showToast(`${r.id} moved to ${newStatus}`);
+        }
+      });
+    });
+  }
+}
+
+function renderSelected(){
+  const r = requests.find(x=>x.id===selectedId);
+  const root = document.getElementById("selectedPanel");
+  if(r && !isAdmin() && r.businessUnit!==currentBU){
+    root.innerHTML = `<p style="color:#64748b;font-size:13px;">Click a request card in the pipeline above to view its details here.</p>`;
+    return;
+  }
+  if(!r){ root.innerHTML = `<p style="color:#64748b;font-size:13px;">Click a request card in the pipeline above to view its details here.</p>`; return; }
+
+  const notesHtml = (r.notes||[]).length===0
+    ? `<div class="notes-empty">No notes yet &mdash; add the first one below.</div>`
+    : [...(r.notes||[])].reverse().map(n=>`
+        <div class="note ${n.author==="System"?"system":""}">
+          <div class="nhead">
+            <span class="nauthor">${escapeHtml(n.author)}</span>
+            <span class="ntime">${formatTime(n.timestamp)}</span>
+          </div>
+          <div class="ntext">${escapeHtml(n.text)}</div>
+        </div>`).join("");
+
+  const adminActions = isAdmin() ? `
+    <div class="sel-actions">
+      <button class="btn btn-primary" onclick="advanceStatus('${r.id}')">Advance Status &rarr;</button>
+      <button class="btn" onclick="deleteRequest('${r.id}')" style="color:#b91c1c;border-color:#fecaca;">Delete</button>
+    </div>` : "";
+
+  root.innerHTML = `
+    <div class="sel-header">
+      <div>
+        <h2 style="font-size:22px;font-weight:600;">${r.id} <span style="font-weight:400;color:#64748b;font-size:16px;">&mdash; ${r.vehicleType} &bull; ${escapeHtml(r.makeModel)}</span></h2>
+        <p style="color:#475569;margin-top:4px;font-size:14px;"><strong>Requested by:</strong> ${escapeHtml(r.requester)} &bull; ${escapeHtml(r.businessUnit)}${r.location?" &bull; "+escapeHtml(r.location):""}</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="${priorityClass(r.priority)}">${r.priority}</span>
+        <span class="${statusClass(r.status)}">${r.status}</span>
+      </div>
+    </div>
+    <p style="margin-top:12px;font-size:14px;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;"><strong style="color:#475569;">Justification:</strong> ${escapeHtml(r.justification)}</p>
+    <div class="sel-grid">
+      <div class="sel-cell"><div class="l">Funding</div><div class="v">${r.fundingSource}</div></div>
+      <div class="sel-cell"><div class="l">Est Cost</div><div class="v">${money(r.estCost)}</div></div>
+      <div class="sel-cell"><div class="l">Vendor</div><div class="v">${r.vendor||"-"}</div></div>
+      <div class="sel-cell"><div class="l">Submitted</div><div class="v">${r.submittedDate}</div></div>
+      <div class="sel-cell"><div class="l">Target Delivery</div><div class="v">${r.targetDelivery||"-"}</div></div>
+      <div class="sel-cell"><div class="l">Upfit Needed</div><div class="v">${r.upfitNeeded||"No"}</div></div>
+      <div class="sel-cell"><div class="l">Wrap Needed</div><div class="v">${r.wrapNeeded||"No"}</div></div>
+      <div class="sel-cell"><div class="l">Days Open</div><div class="v">${r.daysOpen||0}</div></div>
+    </div>
+    <div class="reco"><h4>Recommended next action</h4><p>${nextAction(r)}</p></div>
+    <div class="notes-section">
+      <h4>Notes &amp; Activity <span class="count">${(r.notes||[]).length}</span></h4>
+      <div class="notes-list">${notesHtml}</div>
+      <div class="note-form">
+        <textarea id="noteInput" placeholder="Add an update, approval comment, vendor message... (Ctrl+Enter to submit)"></textarea>
+        <button class="btn btn-primary" onclick="submitNote('${r.id}')">Add Note</button>
+      </div>
+    </div>
+    ${adminActions}`;
+
+  const ta = document.getElementById("noteInput");
+  if(ta){
+    ta.addEventListener("keydown",e=>{
+      if((e.ctrlKey||e.metaKey) && e.key==="Enter"){ e.preventDefault(); submitNote(r.id); }
+    });
+  }
+}
+
+window.submitNote = function(id){
+  const ta = document.getElementById("noteInput");
+  if(!ta) return;
+  const text = (ta.value||"").trim();
+  if(!text){ ta.focus(); return; }
+  const author = isAdmin() ? CURRENT_USER : `${currentBU} Coordinator`;
+  addNoteToRequest(id, text, author);
+  showToast(`Note added to ${id}`);
+  renderSelected();
+};
+
+function nextAction(r){
+  switch(r.status){
+    case "Submitted": return "Validate justification, confirm funding source and Business Unit approver, then move to Pending Approval.";
+    case "Pending Approval": return "Route to fleet manager and finance for sign-off; confirm capital plan alignment.";
+    case "Approved": return "Issue PO to vendor (" + (r.vendor||"TBD") + ") and confirm build slot / target delivery.";
+    case "Ordered": return "Track production status with " + (r.vendor||"vendor") + " and pre-schedule upfit/wrap.";
+    case "In Upfit": return "Confirm upfit completion, schedule delivery, prep Geotab + fuel card setup.";
+    case "Delivered": return "Add VIN to fleet master, retire replaced unit, close request.";
+    case "Cancelled": return "Document cancellation reason and notify requester.";
+    default: return "Review request details.";
+  }
+}
+
+window.advanceStatus = function(id){
+  if(!isAdmin()){ showToast("Only Fleet Admin can change status"); return; }
+  const r = requests.find(x=>x.id===id); if(!r) return;
+  const idx = statusOrder.indexOf(r.status);
+  if(idx>=0 && idx < statusOrder.length-2){
+    const oldStatus = r.status;
+    r.status = statusOrder[idx+1];
+    addSystemNote(r.id, `Status changed: ${oldStatus} \u2192 ${r.status}`);
+    saveRequests(); refreshAll();
+    showToast(`${r.id} moved to ${r.status}`);
+  }
+};
+
+window.deleteRequest = function(id){
+  if(!isAdmin()){ showToast("Only Fleet Admin can delete"); return; }
+  if(!confirm(`Delete request ${id}? This cannot be undone.`)) return;
+  requests = requests.filter(r=>r.id!==id);
+  if(selectedId===id) selectedId = getScopedRequests()[0]?.id || null;
+  saveRequests(); refreshAll();
+  showToast(`${id} deleted`);
+};
+
+function renderTable(){
+  const rows = getFiltered().map(r=>`
+    <tr data-id="${r.id}">
+      <td style="font-weight:600;">${r.id}</td>
+      <td>${escapeHtml(r.requester)}</td>
+      <td>${escapeHtml(r.businessUnit)}</td>
+      <td><div style="font-weight:500;">${r.vehicleType}</div><div style="font-size:12px;color:#64748b;">${escapeHtml(r.makeModel)}</div></td>
+      <td>${r.fundingSource}</td>
+      <td class="text-right">${money(r.estCost)}</td>
+      <td><span class="${statusClass(r.status)}">${r.status}</span></td>
+      <td><span class="${priorityClass(r.priority)}">${r.priority}</span></td>
+      <td>${r.submittedDate}</td>
+      <td>${r.targetDelivery||"-"}</td>
+    </tr>`).join("");
+  document.getElementById("tbl").innerHTML = rows;
+  document.querySelectorAll("#tbl tr").forEach(tr=>{
+    tr.addEventListener("click",()=>{
+      selectedId=tr.dataset.id;
+      document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+      document.querySelector('.tab[data-tab="pipeline"]').classList.add("active");
+      document.getElementById("panel-pipeline").classList.add("active");
+      renderSelected(); renderKanban();
+      document.getElementById("selectedPanel").scrollIntoView({behavior:"smooth",block:"center"});
+    });
+  });
+}
+
+function rebuildFilterOptions(){
+  const fs=document.getElementById("filterStatus");
+  fs.innerHTML = '<option value="All">All Statuses</option>' + statusOrder.map(s=>`<option value="${s}">${s}</option>`).join("");
+  fs.value = fStatus;
+  const scope = getScopedRequests();
+  const ft=document.getElementById("filterType");
+  const types = [...new Set([...baseVehicleTypes, ...scope.map(r=>r.vehicleType)])];
+  ft.innerHTML = '<option value="All">All Vehicle Types</option>' + types.map(s=>`<option value="${s}">${s}</option>`).join("");
+  ft.value = fType;
+  const fb=document.getElementById("filterBU");
+  if(isAdmin()){
+    const bus = [...new Set(requests.map(r=>r.businessUnit))].sort();
+    fb.innerHTML = '<option value="All">All Business Units</option>' + bus.map(s=>`<option value="${s}">${escapeHtml(s)}</option>`).join("");
+    fb.value = fBU; fb.disabled = false;
+  } else {
+    fb.innerHTML = `<option value="${currentBU}">${escapeHtml(currentBU||"")}</option>`;
+    fb.value = currentBU; fb.disabled = true;
+  }
+  const ff=document.getElementById("filterFund");
+  const funds = [...new Set([...baseFunding, ...scope.map(r=>r.fundingSource)])];
+  ff.innerHTML = '<option value="All">All Funding</option>' + funds.map(s=>`<option value="${s}">${s}</option>`).join("");
+  ff.value = fFund;
+}
+function wireFilters(){
+  document.getElementById("searchInput").addEventListener("input",e=>{query=e.target.value;renderTable();});
+  document.getElementById("filterStatus").addEventListener("change",e=>{fStatus=e.target.value;renderTable();});
+  document.getElementById("filterType").addEventListener("change",e=>{fType=e.target.value;renderTable();});
+  document.getElementById("filterBU").addEventListener("change",e=>{fBU=e.target.value;renderTable();});
+  document.getElementById("filterFund").addEventListener("change",e=>{fFund=e.target.value;renderTable();});
+}
+
+document.querySelectorAll(".tab").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("panel-"+btn.dataset.tab).classList.add("active");
+    if(btn.dataset.tab==="analytics") renderCharts();
+  });
+});
+
+let chartRefs = {};
+function destroyCharts(){ Object.values(chartRefs).forEach(c=>{ try{c.destroy();}catch(e){} }); chartRefs={}; }
+function renderCharts(){
+  destroyCharts();
+  const scope = getScopedRequests();
+  const byBU={}; scope.forEach(r=>byBU[r.businessUnit]=(byBU[r.businessUnit]||0)+1);
+  const byType={}; scope.forEach(r=>byType[r.vehicleType]=(byType[r.vehicleType]||0)+1);
+  const byFund={}; scope.forEach(r=>byFund[r.fundingSource]=(byFund[r.fundingSource]||0)+1);
+  const monthly = {};
+  scope.forEach(r=>{
+    const m = (r.submittedDate||"").slice(0,7);
+    if(!m) return;
+    if(!monthly[m]) monthly[m]={submitted:0,delivered:0};
+    monthly[m].submitted++;
+    if(r.status==="Delivered") monthly[m].delivered++;
+  });
+  const months = Object.keys(monthly).sort().slice(-6);
+  const trend = months.map(m=>({m, ...monthly[m]}));
+  const colors=["#2563eb","#7c3aed","#f59e0b","#10b981","#ef4444","#0ea5e9","#a855f7","#14b8a6","#f97316","#64748b"];
+  chartRefs.bu = new Chart(cBU,{type:"bar",data:{labels:Object.keys(byBU),datasets:[{label:"Requests",data:Object.values(byBU),backgroundColor:"#2563eb",borderRadius:8}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+  chartRefs.type = new Chart(cType,{type:"doughnut",data:{labels:Object.keys(byType),datasets:[{data:Object.values(byType),backgroundColor:colors}]},options:{responsive:true,maintainAspectRatio:false}});
+  chartRefs.fund = new Chart(cFund,{type:"doughnut",data:{labels:Object.keys(byFund),datasets:[{data:Object.values(byFund),backgroundColor:["#4f46e5","#0d9488","#f59e0b","#e11d48","#64748b"]}]},options:{responsive:true,maintainAspectRatio:false}});
+  chartRefs.trend = new Chart(cTrend,{type:"line",data:{labels:trend.map(t=>t.m),datasets:[
+    {label:"Submitted",data:trend.map(t=>t.submitted),borderColor:"#3b82f6",backgroundColor:"rgba(59,130,246,.1)",borderWidth:3,tension:.3},
+    {label:"Delivered",data:trend.map(t=>t.delivered),borderColor:"#10b981",backgroundColor:"rgba(16,185,129,.1)",borderWidth:3,tension:.3}
+  ]},options:{responsive:true,maintainAspectRatio:false}});
+}
+
+/* ===== NEW REQUEST MODAL ===== */
+const backdrop = document.getElementById("modalBackdrop");
+function openModal(){
+  const buSel = document.getElementById("buSelect");
+  if(isAdmin()){
+    const bus = [...new Set(requests.map(r=>r.businessUnit))].sort();
+    buSel.innerHTML = bus.map(b=>`<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`).join("") + `<option value="__other__">Other...</option>`;
+    buSel.disabled = false;
+    buSel.value = bus[0]||"__other__";
+  } else {
+    buSel.innerHTML = `<option value="${escapeHtml(currentBU)}">${escapeHtml(currentBU)}</option>`;
+    buSel.disabled = true;
+    buSel.value = currentBU;
+  }
+  document.getElementById("buOtherWrap").style.display="none";
+  document.getElementById("nvrForm").reset();
+  if(!isAdmin()) buSel.value = currentBU;
+  document.getElementById("formErr").style.display="none";
+  backdrop.classList.add("open");
+}
+function closeModal(){ backdrop.classList.remove("open"); }
+document.getElementById("openModal").addEventListener("click",openModal);
+document.getElementById("closeModal").addEventListener("click",closeModal);
+document.getElementById("cancelModal").addEventListener("click",closeModal);
+backdrop.addEventListener("click",e=>{ if(e.target===backdrop) closeModal(); });
+document.getElementById("buSelect").addEventListener("change",e=>{
+  document.getElementById("buOtherWrap").style.display = e.target.value==="__other__" ? "flex" : "none";
+});
+
+function nextId(){
+  const nums = requests.map(r=>parseInt((r.id||"NVR-2050").replace("NVR-",""))).filter(n=>!isNaN(n));
+  const max = nums.length?Math.max(...nums):2050;
+  return "NVR-"+(max+1);
+}
+document.getElementById("nvrForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const requester = (fd.get("requester")||"").trim();
+  let bu = fd.get("businessUnit");
+  if(bu==="__other__") bu = (fd.get("businessUnitOther")||"").trim();
+  if(!isAdmin()) bu = currentBU;
+  const makeModel = (fd.get("makeModel")||"").trim();
+  const justification = (fd.get("justification")||"").trim();
+  const estCost = parseFloat(fd.get("estCost"));
+  if(!requester||!bu||!makeModel||!justification||isNaN(estCost)){
+    document.getElementById("formErr").style.display="block"; return;
+  }
+  const today = new Date().toISOString().slice(0,10);
+  const newR = {
+    id: nextId(), requester, businessUnit: bu,
+    location: (fd.get("location")||"").trim(),
+    vehicleType: fd.get("vehicleType"), makeModel, justification,
+    fundingSource: fd.get("fundingSource"), estCost,
+    status: "Submitted", priority: fd.get("priority")||"Medium",
+    submittedDate: today, targetDelivery: fd.get("targetDelivery")||"",
+    vendor: fd.get("vendor")||"Dealer",
+    upfitNeeded: fd.get("upfitNeeded")||"No", wrapNeeded: fd.get("wrapNeeded")||"No",
+    daysOpen: 0,
+    notes: [{ id: Date.now(), text: `Request submitted by ${requester} for ${bu}.`, author: "System", timestamp: new Date().toISOString() }]
+  };
+  requests.unshift(newR); saveRequests();
+  selectedId = newR.id; closeModal(); refreshAll();
+  showToast(`Request ${newR.id} added`);
+});
+
+/* ===== MANAGE ACCESS CODES MODAL ===== */
+const codesBackdrop = document.getElementById("codesBackdrop");
+function openCodesModal(){
+  if(!isAdmin()) return;
+  const list = document.getElementById("pinList");
+  const rows = [];
+  rows.push(`<div class="pin-row"><label>Fleet Admin PIN</label><input data-key="__admin__" maxlength="5" value="${pins['__admin__']}"/></div>`);
+  Object.keys(DEFAULT_PINS).forEach(k=>{
+    if(k==="__admin__") return;
+    rows.push(`<div class="pin-row"><label>${escapeHtml(k)}</label><input data-key="${escapeHtml(k)}" maxlength="5" value="${pins[k]||''}"/></div>`);
+  });
+  list.innerHTML = rows.join("");
+  codesBackdrop.classList.add("open");
+}
+function closeCodesModal(){ codesBackdrop.classList.remove("open"); }
+document.getElementById("manageCodes").addEventListener("click",openCodesModal);
+document.getElementById("closeCodes").addEventListener("click",closeCodesModal);
+document.getElementById("cancelCodes").addEventListener("click",closeCodesModal);
+codesBackdrop.addEventListener("click",e=>{ if(e.target===codesBackdrop) closeCodesModal(); });
+document.getElementById("saveCodes").addEventListener("click",()=>{
+  const inputs = document.querySelectorAll("#pinList input");
+  inputs.forEach(inp=>{
+    const k = inp.dataset.key;
+    const v = (inp.value||"").trim();
+    if(v) pins[k] = v;
+  });
+  savePins();
+  closeCodesModal();
+  showToast("Access codes updated");
+});
+
+/* ===== EXPORT CSV ===== */
+function csvEscape(v){
+  if(v===null||v===undefined) return "";
+  const s = String(v);
+  if(/[",\n\r]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
+  return s;
+}
+function exportCsv(){
+  const cols = ["id","requester","businessUnit","location","vehicleType","makeModel","justification","fundingSource","estCost","status","priority","submittedDate","targetDelivery","vendor","upfitNeeded","wrapNeeded","daysOpen","notesText"];
+  const headers = ["Request ID","Requester","Business Unit","Location","Vehicle Type","Make/Model","Justification","Funding Source","Est Cost","Status","Priority","Submitted Date","Target Delivery","Vendor","Upfit Needed","Wrap Needed","Days Open","Notes"];
+  const anyFilter = (query && query.length) || fStatus!=="All" || fType!=="All" || fBU!=="All" || fFund!=="All";
+  const data = anyFilter ? getFiltered() : getScopedRequests();
+  const lines = [headers.join(",")];
+  data.forEach(r=>{
+    const rCopy = { ...r };
+    rCopy.notesText = (r.notes||[]).map(n=>`[${formatTime(n.timestamp)} - ${n.author}] ${n.text}`).join(" | ");
+    lines.push(cols.map(c=>csvEscape(rCopy[c])).join(","));
+  });
+  const csv = "\ufeff" + lines.join("\r\n");
+  const blob = new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const today = new Date().toISOString().slice(0,10);
+  const scopeTag = isAdmin() ? "All" : (currentBU||"BU").replace(/[^a-z0-9]/gi,"_");
+  a.href = url; a.download = `NVR_Requests_${scopeTag}_${today}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),200);
+  showToast(`Exported ${data.length} request${data.length===1?"":"s"} to CSV`);
+}
+document.getElementById("exportBtn").addEventListener("click",exportCsv);
+
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(window.__toastT);
+  window.__toastT = setTimeout(()=>t.classList.remove("show"),2500);
+}
+
+document.getElementById("resetData").addEventListener("click",()=>{
+  if(!isAdmin()) return;
+  if(confirm("Reset to sample data? This will erase any requests and notes you've added.")){
+    requests = JSON.parse(JSON.stringify(seed));
+    requests.forEach(r=>{ if(!Array.isArray(r.notes)) r.notes = []; });
+    saveRequests();
+    selectedId = requests[0].id; refreshAll();
+    showToast("Sample data reset");
+  }
+});
+
+/* View toggle - both require PIN */
+document.querySelectorAll("#viewPill button").forEach(b=>{
+  b.addEventListener("click",()=>{
+    const target = b.dataset.view;
+    if(target===viewMode) return;
+    // Lock and prompt PIN for the target
+    sessionStorage.removeItem(UNLOCK_KEY);
+    showLockScreen(target);
+  });
+});
+
+document.getElementById("lockBtn").addEventListener("click",lockDashboard);
+
+function refreshAll(){
+  renderKpis(); rebuildFilterOptions(); renderKanban(); renderSelected(); renderTable();
+  if(document.getElementById("panel-analytics").classList.contains("active")) renderCharts();
+}
+
+/* ===== INIT ===== */
+loadRequests();
+loadPins();
+
+const unlocked = sessionStorage.getItem(UNLOCK_KEY);
+if(unlocked==="admin"){
+  viewMode = "admin";
+  hideLockScreen();
+  applyViewMode();
+  const scope = getScopedRequests();
+  if(scope.length) selectedId = scope[0].id;
+  rebuildFilterOptions(); wireFilters(); refreshAll();
+} else if(unlocked && pins[unlocked]){
+  viewMode = "bu";
+  currentBU = unlocked;
+  hideLockScreen();
+  applyViewMode();
+  const scope = getScopedRequests();
+  if(scope.length) selectedId = scope[0].id;
+  rebuildFilterOptions(); wireFilters(); refreshAll();
+} else {
+  showLockScreen("any");
+  // Still wire filters so they work post-unlock
+  rebuildFilterOptions(); wireFilters();
+}
+</script>
+
+
+</body></html>
